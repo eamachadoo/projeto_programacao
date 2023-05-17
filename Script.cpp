@@ -150,6 +150,6 @@ namespace prog {
         }
     }
     void Script::add(string filename, int r,int g,int b,int x,int y){
-
+        
     }
 }
