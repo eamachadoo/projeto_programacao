@@ -118,7 +118,38 @@ namespace prog {
                     color.green() = g2;
                     color.blue() = b2;
                 }
-            } 
+            }
         }
+    }
+    void Script::fill(int x, int y, int w, int h, int r, int g, int b){
+        for(int i = x; x < x+w; i++){
+            for(int j = y; y < y+w;j++){
+                Color& color = image->at(i,j);
+                color.red() = r;
+                color.green() = g;
+                color.blue() = b;
+            }
+        }
+    }
+    void Script::h_mirror(){
+        for(int i = 0; i < image->width(); i++){
+            for(int j = 0; j < image->height(); j++){
+                Color& color1 = image->at(i,j);
+                Color& color2 = image->at(image->width() - 1 - i, j);
+                swap(color1,color2);
+            }
+        }
+    }
+    void Script::v_mirror(){
+        for(int i = 0; i < image->height(); i++){
+            for(int j = 0; j < image->width(); j++){
+                Color& color1 = image->at(i,j);
+                Color& color2 = image->at(i, image->height() - 1 - j);
+                swap(color1,color2);
+            }
+        }
+    }
+    void Script::add(string filename, int r,int g,int b,int x,int y){
+
     }
 }
