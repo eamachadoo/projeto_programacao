@@ -62,6 +62,27 @@ namespace prog {
                 replace(r1,g1,b1,r2,g2,b2);
                 continue;
             }
+            if(command == "fill"){
+                int x, y, w, h, r, g, b;
+                input >> x >> y >> w >> h >> r >> g >> b;
+                fill(x,y,w,h,r,g,b);
+                continue;
+            }
+            if(command == "h_mirror"){
+                h_mirror();
+                continue;
+            }
+            if(command == "v_mirror"){
+                v_mirror();
+                continue;
+            }
+            if(command == "add"){
+                string filename;
+                int x, y, r, g, b;
+                input >> filename >> r >> g >> b >> x >> y ;
+                add(filename,r,g,b,x,y);
+                continue;
+            }
             // TODO ...
 
         }
@@ -150,6 +171,22 @@ namespace prog {
         }
     }
     void Script::add(string filename, int r,int g,int b,int x,int y){
-        
+        clear_image_if_any();
+        input >> filename;
+        Image* image_to_add = loadFromPNG(filename);
+         for(int i = 0; i < image->height(); i++){
+            for(int j = 0; j < image->width(); j++){
+                Color& color = image->at(x+j,y+i);
+                if(color.red() == r && color.green() == g && color.blue() == b){
+                    continue;
+                }
+                else{
+                    color;
+                }
+            }
+        }
     }
+    void Script::crop(int x, int y, int w, int h){
+
+    }	
 }

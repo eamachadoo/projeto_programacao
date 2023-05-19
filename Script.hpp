@@ -32,6 +32,7 @@ namespace prog
     void h_mirror();
     void v_mirror();
     void add(string filename, int r,int g,int b,int x,int y);
+    void crop(int x, int y, int w, int h);
   };
 }
 #endif
