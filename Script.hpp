@@ -3,8 +3,10 @@
 
 #include <string>
 #include <fstream>
+#include <vector>
 #include "Image.hpp"
 
+using namespace std;
 namespace prog
 {
   class Script
@@ -31,8 +33,13 @@ namespace prog
     void fill(int x, int y, int w, int h, int r, int g, int b);
     void h_mirror();
     void v_mirror();
-    void add(string filename, int r,int g,int b,int x,int y);
+    void add(std::string filename, int r,int g,int b,int x,int y);
     void crop(int x, int y, int w, int h);
+    void rotate_left();
+    void rotate_right();
+    void median_filter(int ws);
+    void xpm2_open(string filename);
+    void xpm2_save(string filename);
   };
 }
 #endif

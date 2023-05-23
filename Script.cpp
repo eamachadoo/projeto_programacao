@@ -1,5 +1,7 @@
 #include <iostream>
 #include <fstream>
+#include <algorithm>
+#include <vector>
 #include "Script.hpp"
 #include "PNG.hpp"
 #include "XPM2.hpp"
@@ -83,6 +85,40 @@ namespace prog {
                 add(filename,r,g,b,x,y);
                 continue;
             }
+            if(command == "crop"){
+                int x,y,w,h;
+                input >> x >> y >> w >> h;
+                crop(x,y,w,h);
+                continue;
+            }
+            if(command == "rotate_left"){
+                rotate_left();
+                continue;
+            }
+            if(command == "rotate_right"){
+                rotate_right();
+                continue;
+            }
+            if(command == "median_filter"){
+                int ws;
+                input >> ws;
+                median_filter(ws);
+                continue;
+            }
+            if(command == "xpm2_open"){
+                clear_image_if_any(); //para evitar memory leak 
+                string filename;
+                input >> filename;
+                loadFromXPM2(filename);
+                continue;
+            }
+            if(command == "xpm2_save"){ //xpm2_save chama xpm2_open
+                string filename;
+                input >> filename;
+                saveToXPM2(filename,image);
+                continue;
+            }
+                
             // TODO ...
 
         }
@@ -143,8 +179,8 @@ namespace prog {
         }
     }
     void Script::fill(int x, int y, int w, int h, int r, int g, int b){
-        for(int i = x; x < x+w; i++){
-            for(int j = y; y < y+w;j++){
+        for(int i = x; i < x+w; i++){
+            for(int j = y; j < y+h;j++){
                 Color& color = image->at(i,j);
                 color.red() = r;
                 color.green() = g;
@@ -153,40 +189,112 @@ namespace prog {
         }
     }
     void Script::h_mirror(){
-        for(int i = 0; i < image->width(); i++){
-            for(int j = 0; j < image->height(); j++){
-                Color& color1 = image->at(i,j);
-                Color& color2 = image->at(image->width() - 1 - i, j);
-                swap(color1,color2);
+        for(int y = 0; y < image->height(); y++){
+            for(int x = 0; x < image->width()/2; x++){
+                Color color = image->at(x,y);
+                image->at(x,y) = image->at(image->width() - x - 1,y);
+                image->at(image->width()-x-1,y) = color;
             }
         }
     }
     void Script::v_mirror(){
-        for(int i = 0; i < image->height(); i++){
-            for(int j = 0; j < image->width(); j++){
-                Color& color1 = image->at(i,j);
-                Color& color2 = image->at(i, image->height() - 1 - j);
-                swap(color1,color2);
+        for(int y = 0; y < image->height()/2; y++){
+            for(int x = 0; x < image->width(); x++){
+                Color color = image->at(x,y);
+                image->at(x,y) = image->at(x,image->height()-y-1);
+                image->at(x,image->height()-y-1) = color;
             }
         }
     }
-    void Script::add(string filename, int r,int g,int b,int x,int y){
-        clear_image_if_any();
-        input >> filename;
-        Image* image_to_add = loadFromPNG(filename);
-         for(int i = 0; i < image->height(); i++){
-            for(int j = 0; j < image->width(); j++){
-                Color& color = image->at(x+j,y+i);
-                if(color.red() == r && color.green() == g && color.blue() == b){
-                    continue;
+    
+    void Script::add(std::string filename, int r,int g,int b,int x,int y){
+        Image* inicial_image_to_add = loadFromPNG(filename);
+         for(int i = 0; i < inicial_image_to_add->height(); i++){
+            for(int j = 0; j < inicial_image_to_add->width(); j++){
+                Color& color = inicial_image_to_add->at(j,i);
+                if(color.red() != r || color.green() != g || color.blue() != b){
+                    int new_image_x = x + j;
+                    int new_image_y = y + i;
+
+                    if(new_image_x >= 0 && new_image_x < image->width() && new_image_y >= 0 && new_image_y < image->height()){
+                        image->at(new_image_x,new_image_y) = color;
+                    }
+                }
+            }
+        }
+        delete inicial_image_to_add;
+    }
+    
+    void Script::crop(int x, int y, int w, int h){
+       Image* cropped_image = new Image(w,h);
+       for (int i = 0; i < h; i++){
+        for (int j = 0; j < w; j++){
+            Color pixel = image->at(x + j, y + i);
+            cropped_image->at(j,i) = pixel;
+        }
+       }
+       delete image;
+       image = cropped_image;
+    }
+    void Script::rotate_left(){
+        int width = image->width();
+        int height = image->height();
+        Image* rotated_image = new Image(height,width);
+        for(int i = 0; i < image->height();i++){
+            for(int j = 0; j < image->width();j++){
+                Color pixel = image->at(j,i);
+                rotated_image->at(i,width-1-j) = pixel;
+            }
+        }
+        delete image;
+        image = rotated_image;
+    }
+    void Script::rotate_right(){
+        int width = image->width();
+        int height = image->height();
+        Image* rotated_image = new Image(height,width);
+        for(int i = 0; i < image->height();i++){
+            for(int j = 0; j < image->width();j++){
+                Color pixel = image->at(j,i);
+                rotated_image->at(height-1-i,j) = pixel;
+            }
+        }
+        delete image;
+        image = rotated_image; 
+    }
+    void Script::median_filter(int ws){ //ws = window size
+        Image* modified_image = new Image(image->width(),image->height());
+        for(int y = 0; y < image->height();y++){
+            for(int x = 0; x < image->width();x++){
+                vector<rgb_value> red;
+                vector<rgb_value> green;
+                vector<rgb_value> blue;
+                for(int neighbor_y = y - ws / 2; neighbor_y <= y + ws / 2; neighbor_y++){
+                    for(int neighbor_x = x - ws /2; neighbor_x <= x + ws / 2;neighbor_x++){
+                        if(neighbor_x >= 0 && neighbor_x < image->width() && neighbor_y >= 0 && neighbor_y < image->height()){ //verificar se estamos a aceder a um pixel que existe e está contido na imagem para evitar buffer overflows
+                            red.push_back(image->at(neighbor_x, neighbor_y).red());
+                            green.push_back(image->at(neighbor_x, neighbor_y).green());
+                            blue.push_back(image->at(neighbor_x, neighbor_y).blue());
+                        }
+                    }
+                }
+                sort(red.begin(),red.end());
+                sort(green.begin(),green.end());
+                sort(blue.begin(),blue.end());
+
+                if(red.size() % 2){
+                    modified_image->at(x,y).red() = red[red.size()/2];
+                    modified_image->at(x,y).green() = green[red.size()/2];
+                    modified_image->at(x,y).blue() = blue[red.size()/2];
                 }
                 else{
-                    color;
+                    modified_image->at(x,y).red() = (red[red.size()/2] + red[red.size()/2-1])/2;
+                    modified_image->at(x,y).green() = (green[green.size()/2] + green[green.size()/2-1])/2;
+                    modified_image->at(x,y).blue() = (blue[blue.size()/2] + blue[blue.size()/2-1])/2;
                 }
             }
         }
+        delete image;
+        image = modified_image;
     }
-    void Script::crop(int x, int y, int w, int h){
-
-    }	
 }
